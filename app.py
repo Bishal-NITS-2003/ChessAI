@@ -4,6 +4,12 @@ import torch.nn as nn
 import chess
 
 
+def get_sorted_indices(tensor):
+    """Returns indices sorted by descending probability."""
+    return torch.argsort(tensor, descending=True).tolist()
+
+
+
 class ChessMovePredictor(nn.Module):
     def __init__(self):
         super(ChessMovePredictor, self).__init__()
@@ -59,17 +65,27 @@ def home():
 @app.post("/predict/")
 async def predict(fen: str):
     try:
+        board = chess.Board(fen)
         # Run model prediction
         with torch.no_grad():
             tensor = fen_to_tensor(fen).unsqueeze(0).to(device)  # Add batch dimension
-            start_pred, end_pred = model(tensor)
-            start_idx = torch.argmax(start_pred).item()
-            end_idx = torch.argmax(end_pred).item()
+            start_probs, end_probs = model(tensor)
+   
+             # Get sorted move candidates based on probability
+            start_candidates = get_sorted_indices(start_probs.squeeze())
+            end_candidates = get_sorted_indices(end_probs.squeeze())
 
-            start_square = all_moves[start_idx]
-            end_square = all_moves[end_idx]
+            # Find the best legal move
+            for start_idx in start_candidates:
+                  for end_idx in end_candidates:
+                       start_square = all_moves[start_idx]
+                       end_square = all_moves[end_idx]
+                       move = chess.Move.from_uci(f"{start_square}{end_square}")
 
-        return {"prediction": start_square+end_square}
+                       if move in board.legal_moves:
+                               return {"prediction": move.uci()}
+
+            return {"prediction": "No move found"}
 
     except Exception as e:
         return {"error": str(e)}
