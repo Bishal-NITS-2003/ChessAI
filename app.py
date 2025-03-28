@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import torch
 import torch.nn as nn
 import chess
@@ -47,8 +48,17 @@ def fen_to_tensor(fen):
 
     return tensor    
 
-# Define API app
 app = FastAPI()
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows requests from any frontend
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all HTTP methods
+    allow_headers=["*"],  # Allows all headers
+)
+
 
 all_moves = list(chess.SQUARE_NAMES)  # 'a1', 'a2', ..., 'h8'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
