@@ -94,6 +94,8 @@ async def predict(data: InputData):
             # Find the best legal move
             for start_idx in start_candidates:
                   for end_idx in end_candidates:
+                       if start_idx == end_idx:  # Avoid moves like 'f4f4'
+                                continue  
                        start_square = all_moves[start_idx]
                        end_square = all_moves[end_idx]
                        move = chess.Move.from_uci(f"{start_square}{end_square}")
