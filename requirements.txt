@@ -2,3 +2,4 @@ fastapi
 torch
 uvicorn
 chess
+pydantic

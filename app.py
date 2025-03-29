@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import torch
 import torch.nn as nn
 import chess
@@ -68,17 +69,22 @@ model.load_state_dict(torch.load("chess_model.pth", map_location=torch.device(de
 model.to(device)  # Ensure it's on CPU
 model.eval()  # Set to evaluation mode
 
+# Define request body format
+class InputData(BaseModel):
+    fen: str 
+
+
 @app.get("/")
 def home():
     return {"message": "Model API is running!"}
 
 @app.post("/predict/")
-async def predict(fen: str):
+async def predict(data: InputData):
     try:
-        board = chess.Board(fen)
+        board = chess.Board(data.fen) 
         # Run model prediction
         with torch.no_grad():
-            tensor = fen_to_tensor(fen).unsqueeze(0).to(device)  # Add batch dimension
+            tensor = fen_to_tensor(data.fen).unsqueeze(0).to(device)  # Add batch dimension
             start_probs, end_probs = model(tensor)
    
              # Get sorted move candidates based on probability
